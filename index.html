@@ -1,1467 +1,733 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WATER FLOW SURVIVAL</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WATER FLOW</title>
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+*{box-sizing:border-box}
+body{
+  margin:0;background:#101820;color:#f4f7fa;
+  font-family:Arial,"Noto Sans JP",sans-serif;
+  min-height:100vh;display:flex;justify-content:center;
+  align-items:center;overflow:hidden;
 }
-
-body {
-  background: #081827;
-  color: #eefaff;
-  font-family: Arial, "Noto Sans JP", sans-serif;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow-x: hidden;
+#gameWrap{
+  width:min(96vw,850px);display:flex;flex-direction:column;
+  align-items:center;gap:10px;
 }
-
-header {
-  width: 100%;
-  padding: 17px 10px 12px;
-  text-align: center;
+#topbar{
+  width:100%;display:flex;justify-content:space-between;
+  align-items:center;gap:8px;flex-wrap:wrap;
 }
-
-h1 {
-  font-size: clamp(22px, 5vw, 34px);
-  letter-spacing: 3px;
-  color: #63e6ff;
-  text-shadow: 0 0 15px #00baff66;
+.logo{font-size:clamp(19px,4vw,27px);font-weight:900;letter-spacing:2px;color:#72e5ff}
+.stats{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#c5d4df}
+.stats strong{color:#fff;font-size:18px;margin-left:4px}
+#canvasBox{
+  width:min(94vw,690px);aspect-ratio:1/1;position:relative;
+  background:#14232d;border:1px solid #344b59;border-radius:18px;
+  overflow:hidden;box-shadow:0 12px 45px #0008;
 }
-
-.subtitle {
-  color: #8eafc3;
-  font-size: 12px;
-  margin-top: 5px;
-  letter-spacing: 1px;
+canvas{width:100%;height:100%;display:block;touch-action:manipulation}
+#hint{
+  width:min(94vw,690px);font-size:12px;line-height:1.65;
+  color:#aabdc9;text-align:center;
 }
-
-#gameContainer {
-  width: min(94vw, 680px);
-  position: relative;
-  margin: 8px auto;
+#overlay{
+  position:absolute;inset:0;background:#08141de8;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;text-align:center;z-index:5;
 }
-
-canvas {
-  width: 100%;
-  display: block;
-  background: #102d40;
-  border: 2px solid #38647c;
-  border-radius: 16px;
-  touch-action: none;
-  box-shadow: 0 0 30px #00baff18;
+.panel{max-width:440px;width:100%}
+.panel h1{font-size:clamp(30px,7vw,48px);margin:0 0 8px;color:#72e5ff;letter-spacing:3px}
+.panel h2{font-size:26px;margin:0 0 12px}
+.panel p{font-size:14px;line-height:1.8;color:#c4d3dd;margin:10px 0 20px}
+button{
+  border:0;border-radius:10px;padding:13px 25px;
+  background:#55d5f0;color:#08202a;font-size:16px;
+  font-weight:bold;cursor:pointer;margin:5px;
 }
-
-#hud {
-  width: min(94vw, 680px);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin: 5px 0 10px;
-}
-
-.stat {
-  background: #122c40;
-  border: 1px solid #284b63;
-  border-radius: 10px;
-  padding: 10px 5px;
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 11px;
-  color: #8eafc3;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 21px;
-  font-weight: bold;
-  color: #72e8ff;
-  font-variant-numeric: tabular-nums;
-}
-
-#barrierInfo {
-  width: min(94vw, 680px);
-  background: #122c40;
-  border: 1px solid #284b63;
-  padding: 11px 14px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: #b5d4e5;
-}
-
-#barrierCount {
-  color: #64e8ff;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-#message {
-  width: min(94vw, 680px);
-  min-height: 25px;
-  text-align: center;
-  color: #9fc6d9;
-  font-size: 12px;
-  margin: 4px 0 12px;
-}
-
-button {
-  background: #16435c;
-  border: 1px solid #3c91ae;
-  color: white;
-  border-radius: 9px;
-  padding: 11px 23px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: .15s;
-}
-
-button:hover {
-  background: #226681;
-}
-
-button:active {
-  transform: scale(.97);
-}
-
-.primary {
-  background: #087caa;
-  border-color: #56dfff;
-  font-weight: bold;
-}
-
-.primary:hover {
-  background: #0a98c9;
-}
-
-#startScreen,
-#overScreen {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  background: #071827eF;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  text-align: center;
-}
-
-#overScreen {
-  display: none;
-}
-
-.overlayTitle {
-  color: #6be8ff;
-  font-size: clamp(23px, 5vw, 32px);
-  font-weight: bold;
-  letter-spacing: 2px;
-  margin-bottom: 12px;
-}
-
-.overlayText {
-  color: #a9c8d8;
-  font-size: 13px;
-  line-height: 1.9;
-  max-width: 400px;
-  margin-bottom: 18px;
-}
-
-.result {
-  width: min(90%, 300px);
-  background: #17374b;
-  border: 1px solid #36718a;
-  border-radius: 12px;
-  padding: 15px;
-  margin: 5px 0 20px;
-}
-
-.resultRow {
-  display: flex;
-  justify-content: space-between;
-  padding: 7px 0;
-  color: #b5d4e5;
-  font-size: 14px;
-}
-
-.resultRow strong {
-  color: #6ce7ff;
-}
-
-.buttonRow {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-
-#instructions {
-  width: min(94vw, 680px);
-  background: #10283a;
-  border: 1px solid #254b62;
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-  line-height: 1.8;
-  font-size: 12px;
-  color: #b5d0df;
-}
-
-#instructions h3 {
-  color: #65ddf5;
-  margin-bottom: 7px;
-  font-size: 14px;
-}
-
-#instructions b {
-  color: #e4f8ff;
-}
-
-@media(max-width: 450px) {
-  #barrierInfo {
-    font-size: 11px;
-  }
-
-  .stat-value {
-    font-size: 18px;
-  }
-
-  button {
-    padding: 10px 17px;
-  }
+button.secondary{background:#344b59;color:#f4f7fa}
+button:active{transform:scale(.97)}
+.small{font-size:11px!important;color:#91a8b6!important}
+#mobileHelp{display:none}
+@media(max-width:600px){
+  #gameWrap{gap:7px}
+  .stats{gap:9px;font-size:11px}
+  .stats strong{font-size:15px}
+  #hint{font-size:11px}
+  #mobileHelp{display:block}
 }
 </style>
 </head>
-
 <body>
-
-<header>
-  <h1>WATER FLOW</h1>
-  <div class="subtitle">SURVIVE THE CURRENT</div>
-</header>
-
-<div id="hud">
-  <div class="stat">
-    <div class="stat-label">SURVIVAL TIME</div>
-    <div class="stat-value" id="timeValue">0.0</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">LAPS</div>
-    <div class="stat-value" id="lapValue">0</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">LAP TIME</div>
-    <div class="stat-value" id="speedValue">20.0s</div>
-  </div>
-</div>
-
-<div id="gameContainer">
-
-  <canvas id="gameCanvas" width="700" height="700"></canvas>
-
-  <div id="startScreen">
-    <div class="overlayTitle">WATER FLOW</div>
-    <div class="overlayText">
-      水路を周回するキャラクターを、柵で水流を変えて誘導しよう。<br>
-      障害物を避けながら、できるだけ長く生き残れ！
-    </div>
-    <button class="primary" id="startButton">GAME START</button>
-  </div>
-
-  <div id="overScreen">
-    <div class="overlayTitle">GAME OVER</div>
-    <div class="overlayText">障害物に接触しました。</div>
-
-    <div class="result">
-      <div class="resultRow">
-        <span>生存時間</span>
-        <strong id="finalTime">0.0秒</strong>
-      </div>
-      <div class="resultRow">
-        <span>周回数</span>
-        <strong id="finalLaps">0周</strong>
-      </div>
-      <div class="resultRow">
-        <span>最高記録</span>
-        <strong id="bestTime">0.0秒</strong>
-      </div>
-    </div>
-
-    <div class="buttonRow">
-      <button class="primary" id="retryButton">もう一度遊ぶ</button>
+<div id="gameWrap">
+  <div id="topbar">
+    <div class="logo">WATER FLOW</div>
+    <div class="stats">
+      <div>TIME<strong id="time">0.0</strong></div>
+      <div>LAP<strong id="lap">0</strong></div>
+      <div>SPEED<strong id="speed">20.0s</strong></div>
+      <div>FENCES<strong id="fences">0/3</strong></div>
     </div>
   </div>
 
-</div>
+  <div id="canvasBox">
+    <canvas id="game" width="700" height="700"></canvas>
+    <div id="overlay">
+      <div class="panel" id="panel">
+        <h1>WATER FLOW</h1>
+        <p>
+          水路を自動で周回するキャラクターを、柵で誘導しよう。<br>
+          障害物を避けながら、できるだけ長く生き残れ！
+        </p>
+        <p>
+          <b>柵の使い方</b><br>
+          キャラクターの進行レーンに柵を置くと、隣のレーンへ移動。<br>
+          2本の柵を組み合わせると、移動先を指定できる。<br>
+          通過した場所の後ろに置くと、水流を弱めて減速させる。
+        </p>
+        <button id="startBtn">GAME START</button>
+        <p class="small">PC：クリックで柵を設置 / スマホ：タップで設置</p>
+      </div>
+    </div>
+  </div>
 
-<div id="barrierInfo">
-  <span>設置可能な柵</span>
-  <span id="barrierCount">3 / 3</span>
-  <span>水路をタップして設置</span>
-</div>
-
-<div id="message">
-  柵を置いて水流を変えよう！
-</div>
-
-<div id="instructions">
-  <h3>HOW TO PLAY</h3>
-  <b>① 柵を設置する</b><br>
-  水路のマスをクリック・タップすると柵を設置できます。最大3本まで設置できます。<br>
-  <b>② 水流を変える</b><br>
-  キャラクターの進路上に柵を置くと、水が迂回し、キャラクターが横のレーンへ移動します。<br>
-  <b>③ 減速させる</b><br>
-  キャラクターが通過した直後の場所に柵を置くと、柵の後方に弱い水流が生じ、減速します。<br>
-  <b>④ 注意する</b><br>
-  柵は周回時間の半分で消滅します。岩・とげ玉・丸太・回転水車に接触するとゲームオーバーです。
+  <div id="hint">
+    柵は最大3本。設置から一定時間で消滅します。<br>
+    キャラクターが障害物に触れるとゲームオーバー。
+    <span id="mobileHelp">水路上をタップして柵を設置しよう。</span>
+  </div>
 </div>
 
 <script>
+(() => {
 "use strict";
 
-// ==========================================
-// 基本設定
-// ==========================================
-
-const canvas = document.getElementById("gameCanvas");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const W = 700, H = 700, CX = 350, CY = 350;
 
-const SIZE = 700;
-const CENTER = SIZE / 2;
-
-const CELL = 35;
-const GRID = 20;
-
-const CENTER_X = 10;
-const CENTER_Y = 10;
-
-// 3つのレーン
-const RADII = [140, 175, 210];
-
-const MAX_BARRIERS = 3;
-
-// 周回時間の目標値
-const LAP_TARGETS = [
-  20, 18, 16, 15, 14, 13,
-  12.5, 12, 11.5, 11, 10.5, 10
-];
-
-// ==========================================
-// ゲーム状態
-// ==========================================
-
-let running = false;
-let gameOver = false;
-
-let elapsed = 0;
-let lapCount = 0;
-
-let lapTime = 20;
-let speedProgress = 0;
-
-let lastFrame = 0;
-
-let player = {
-  s: 0,
-  lane: 1,
-  laneTarget: 1,
-  laneVelocity: 0,
-  speedMultiplier: 1
+const ui = {
+  time: document.getElementById("time"),
+  lap: document.getElementById("lap"),
+  speed: document.getElementById("speed"),
+  fences: document.getElementById("fences"),
+  overlay: document.getElementById("overlay"),
+  panel: document.getElementById("panel")
 };
 
-let barriers = [];
+const LANE = {
+  0: {half:245, radius:75},
+  1: {half:215, radius:65},
+  2: {half:185, radius:55}
+};
+
+let paths = [];
+let running = false;
+let gameOver = false;
+let lastTime = 0;
+let elapsed = 0;
+let lapCount = 0;
+let lapTime = 20;
+let lapProgress = 0;
+let totalProgress = 0;
+let playerLane = 1;
+let player = {x:0,y:0,angle:0};
+let fences = [];
 let obstacles = [];
 let particles = [];
-
-let obstacleTimer = 0;
-let thornTimer = 0;
-let logUnlocked = false;
-let wheelUnlocked = false;
-
+let spawnTimer = 0;
+let obstacleLevel = 0;
+let wheelAngle = 0;
 let bestTime = Number(localStorage.getItem("waterFlowBest") || 0);
 
-// ==========================================
-// 周回コース
-// ==========================================
+const rand = (a,b) => a + Math.random()*(b-a);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 
-// 正方形の周回コース。
-// sはコース上の距離を表す。
-
-function perimeter(lane) {
-  return RADII[lane] * 8;
-}
-
-function getPosition(s, lane) {
-
-  const r = getRadius(lane);
-
-  const length = r * 8;
-
-  s = ((s % length) + length) % length;
-
-  const side = 2 * r;
-
-  if (s < side) {
-    return {
-      x: CENTER - r + s,
-      y: CENTER - r,
-      dx: 1,
-      dy: 0
-    };
-  }
-
-  s -= side;
-
-  if (s < side) {
-    return {
-      x: CENTER + r,
-      y: CENTER - r + s,
-      dx: 0,
-      dy: 1
-    };
-  }
-
-  s -= side;
-
-  if (s < side) {
-    return {
-      x: CENTER + r - s,
-      y: CENTER + r,
-      dx: -1,
-      dy: 0
-    };
-  }
-
-  s -= side;
-
-  return {
-    x: CENTER - r,
-    y: CENTER + r - s,
-    dx: 0,
-    dy: -1
+function makeRoundedPath(half, radius) {
+  const pts = [];
+  const steps = 32;
+  const addLine = (x1,y1,x2,y2,n=30) => {
+    for(let i=0;i<=n;i++){
+      const t=i/n;
+      pts.push({x:x1+(x2-x1)*t,y:y1+(y2-y1)*t});
+    }
   };
-}
-
-function getRadius(lane) {
-  return RADII[0] + (RADII[2] - RADII[0]) * lane / 2;
-}
-
-function normalizeDistance(d, length) {
-  return ((d % length) + length) % length;
-}
-
-// ==========================================
-// 周回速度
-// ==========================================
-
-function updateLapTime() {
-
-  const total = elapsed;
-
-  // 目標値へ滑らかに加速
-  // 各段階の目標時間に向かって連続的に変化する。
-
-  const interval = 22;
-
-  let stage = Math.floor(total / interval);
-
-  if (stage >= LAP_TARGETS.length - 1) {
-    lapTime = 10;
-    return;
-  }
-
-  const progress = (total % interval) / interval;
-
-  const from = LAP_TARGETS[stage];
-  const to = LAP_TARGETS[stage + 1];
-
-  const smooth = progress * progress * (3 - 2 * progress);
-
-  lapTime = from + (to - from) * smooth;
-}
-
-// ==========================================
-// 柵の設置
-// ==========================================
-
-function addBarrier(x, y) {
-
-  if (!running || barriers.length >= MAX_BARRIERS) {
-    return;
-  }
-
-  const dx = x - CENTER;
-  const dy = y - CENTER;
-
-  const dist = Math.max(Math.abs(dx), Math.abs(dy));
-
-  // 水路の範囲を確認
-  let lane = Math.round((dist - RADII[0]) / 35);
-
-  lane = Math.max(0, Math.min(2, lane));
-
-  if (Math.abs(dist - RADII[lane]) > 19) {
-    return;
-  }
-
-  // クリック位置を周回距離に変換
-  const r = RADII[lane];
-
-  let s;
-
-  if (Math.abs(dy + r) < 18 && dx >= -r && dx <= r) {
-    s = dx + r;
-  }
-  else if (Math.abs(dx - r) < 18 && dy >= -r && dy <= r) {
-    s = 2 * r + dy + r;
-  }
-  else if (Math.abs(dy - r) < 18 && dx >= -r && dx <= r) {
-    s = 4 * r + r - dx;
-  }
-  else if (Math.abs(dx + r) < 18 && dy >= -r && dy <= r) {
-    s = 6 * r + r - dy;
-  }
-  else {
-    return;
-  }
-
-  const length = perimeter(lane);
-
-  s = normalizeDistance(s, length);
-
-  // 近すぎる場所への重複設置を防止
-  if (barriers.some(b =>
-    b.lane === lane &&
-    Math.abs(normalizeDistance(b.s - s + length / 2, length) - length / 2) < 22
-  )) {
-    return;
-  }
-
-  barriers.push({
-    s,
-    lane,
-    life: lapTime * 0.5,
-    maxLife: lapTime * 0.5,
-    id: Math.random()
-  });
-
-  updateBarrierUI();
-
-  document.getElementById("message").textContent =
-    "柵を設置！水流が変化しています。";
-}
-
-canvas.addEventListener("pointerdown", e => {
-
-  const rect = canvas.getBoundingClientRect();
-
-  const scaleX = SIZE / rect.width;
-  const scaleY = SIZE / rect.height;
-
-  const x = (e.clientX - rect.left) * scaleX;
-  const y = (e.clientY - rect.top) * scaleY;
-
-  addBarrier(x, y);
-});
-
-function updateBarrierUI() {
-  document.getElementById("barrierCount").textContent =
-    `${MAX_BARRIERS - barriers.length} / ${MAX_BARRIERS}`;
-}
-
-// ==========================================
-// 水流の計算
-// ==========================================
-
-// 柵の影響を周辺だけに限定する。
-// 柵の前方では横移動を発生させる。
-// 柵の後方では速度を落とす。
-
-function calculateWaterFlow(dt) {
-
-  let lateralForce = 0;
-  let speedEffect = 1;
-
-  barriers.forEach(b => {
-
-    const length = perimeter(b.lane);
-
-    const forward = normalizeDistance(
-      b.s - player.s,
-      length
-    );
-
-    const backward = normalizeDistance(
-      player.s - b.s,
-      length
-    );
-
-    const sameLane = Math.abs(player.lane - b.lane);
-
-    if (sameLane > 1.05) return;
-
-    // 柵の前方に近づいた場合
-    if (forward < 95 && forward > 0) {
-
-      const influence = 1 - forward / 95;
-
-      // 水が柵を避ける方向へ流れる
-      // レーンによって迂回方向を決定
-      let direction;
-
-      if (b.lane === 0) {
-        direction = 1;
-      } else if (b.lane === 2) {
-        direction = -1;
-      } else {
-        direction = player.lane <= b.lane ? 1 : -1;
-      }
-
-      lateralForce += direction * influence * 2.3;
+  const addArc = (cx,cy,r,a1,a2) => {
+    for(let i=0;i<=steps;i++){
+      const a=a1+(a2-a1)*i/steps;
+      pts.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});
     }
+  };
 
-    // 柵を通過した直後の後方の弱い水流
-    if (backward < 75 && backward > 0) {
+  const h=half, r=radius;
+  addLine(-h+r,-h,h-r,-h);
+  addArc(h-r,-h+r,r,-Math.PI/2,0);
+  addLine(h,-h+r,h,h-r);
+  addArc(h-r,h-r,r,0,Math.PI/2);
+  addLine(h-r,h,-h+r,h);
+  addArc(-h+r,h-r,r,Math.PI/2,Math.PI);
+  addLine(-h,h-r,-h,-h+r);
+  addArc(-h+r,-h+r,r,Math.PI,Math.PI*1.5);
 
-      const influence = 1 - backward / 75;
-
-      speedEffect *= 1 - influence * 0.35;
-    }
-  });
-
-  // 横方向の流れを徐々に反映
-  player.laneVelocity += lateralForce * dt * 2.0;
-
-  player.laneVelocity *= Math.pow(0.12, dt);
-
-  player.laneTarget += player.laneVelocity * dt;
-
-  player.laneTarget = Math.max(
-    0,
-    Math.min(2, player.laneTarget)
-  );
-
-  // キャラクターも水流に従って移動
-  player.lane +=
-    (player.laneTarget - player.lane) *
-    Math.min(1, dt * 4.0);
-
-  player.lane = Math.max(0, Math.min(2, player.lane));
-
-  player.speedMultiplier +=
-    (speedEffect - player.speedMultiplier) *
-    Math.min(1, dt * 3);
-
-  return player.speedMultiplier;
-}
-
-// ==========================================
-// 障害物
-// ==========================================
-
-function spawnRock() {
-
-  const lane = Math.floor(Math.random() * 3);
-
-  const distance = Math.random() * perimeter(lane);
-
-  obstacles.push({
-    type: "rock",
-    lane,
-    s: distance,
-    radius: 13
-  });
-}
-
-function spawnThorn() {
-
-  const lane = Math.floor(Math.random() * 3);
-
-  const distance = Math.random() * perimeter(lane);
-
-  obstacles.push({
-    type: "thorn",
-    lane,
-    s: distance,
-    radius: 12,
-    phase: 0,
-    warning: 1.0
-  });
-}
-
-function spawnLog() {
-
-  const lane = Math.floor(Math.random() * 3);
-
-  const distance = Math.random() * perimeter(lane);
-
-  obstacles.push({
-    type: "log",
-    lane,
-    s: distance,
-    radius: 19
-  });
-}
-
-function spawnWheel() {
-
-  const lane = Math.floor(Math.random() * 3);
-
-  const distance = Math.random() * perimeter(lane);
-
-  obstacles.push({
-    type: "wheel",
-    lane,
-    s: distance,
-    angle: Math.random() * Math.PI * 2,
-    radius: 25
-  });
-}
-
-// ==========================================
-// 障害物の出現管理
-// ==========================================
-
-function updateObstacles(dt) {
-
-  obstacleTimer += dt;
-  thornTimer += dt;
-
-  const difficulty = Math.min(1, elapsed / 180);
-
-  // 岩
-  const rockInterval = Math.max(2.2, 5.0 - difficulty * 2.5);
-
-  if (obstacleTimer >= rockInterval) {
-    obstacleTimer = 0;
-    spawnRock();
+  const cumulative=[0];
+  let length=0;
+  for(let i=1;i<pts.length;i++){
+    length+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);
+    cumulative.push(length);
   }
+  return {pts,cumulative,length};
+}
 
-  // とげ玉
-  const thornInterval = Math.max(4.0, 8.0 - difficulty * 3);
-
-  if (thornTimer >= thornInterval) {
-    thornTimer = 0;
-    spawnThorn();
+function pathPoint(lane,s) {
+  const path=paths[lane];
+  const target=((s%1)+1)%1*path.length;
+  let lo=0,hi=path.cumulative.length-1;
+  while(lo<hi){
+    const mid=(lo+hi)>>1;
+    if(path.cumulative[mid]<target) lo=mid+1;
+    else hi=mid;
   }
+  const i=Math.max(1,lo);
+  const a=path.pts[i-1], b=path.pts[i];
+  const d=path.cumulative[i]-path.cumulative[i-1];
+  const t=d===0?0:(target-path.cumulative[i-1])/d;
+  const x=a.x+(b.x-a.x)*t+CX;
+  const y=a.y+(b.y-a.y)*t+CY;
+  const angle=Math.atan2(b.y-a.y,b.x-a.x);
+  return {x,y,angle};
+}
 
-  // 丸太は後半から低頻度で出現
-  if (elapsed > 100 && Math.random() < dt * 0.025) {
-    spawnLog();
-  }
-
-  // 水車も後半から追加
-  if (elapsed > 70 && Math.random() < dt * 0.012) {
-    spawnWheel();
-  }
-
-  // 障害物の更新
-  obstacles.forEach(o => {
-
-    if (o.type === "thorn") {
-
-      if (o.warning > 0) {
-        o.warning -= dt;
-      } else {
-        o.phase += dt * 3;
+function nearestTrack(x,y) {
+  let best={distance:Infinity,lane:1,s:0};
+  for(let lane=0;lane<3;lane++){
+    const path=paths[lane];
+    for(let i=0;i<path.pts.length;i++){
+      const p=path.pts[i];
+      const dx=x-(p.x+CX),dy=y-(p.y+CY);
+      const d=dx*dx+dy*dy;
+      if(d<best.distance){
+        best.distance=d;
+        best.lane=lane;
+        best.s=path.cumulative[i]/path.length;
       }
     }
-
-    if (o.type === "wheel") {
-      o.angle += dt * 1.8;
-    }
-  });
+  }
+  return best;
 }
 
-// ==========================================
-// 柵の更新
-// ==========================================
-
-function updateBarriers(dt) {
-
-  barriers.forEach(b => {
-    b.life -= dt;
-  });
-
-  barriers = barriers.filter(b => b.life > 0);
-
-  updateBarrierUI();
+function normalizeDelta(a,b) {
+  let d=(a-b+1)%1;
+  if(d<0)d+=1;
+  return d;
 }
 
-// ==========================================
-// 衝突判定
-// ==========================================
-
-function checkCollision() {
-
-  obstacles.forEach(o => {
-
-    const p = getPosition(player.s, player.lane);
-    const q = getPosition(o.s, o.lane);
-
-    const distance = Math.hypot(p.x - q.x, p.y - q.y);
-
-    const laneDistance = Math.abs(player.lane - o.lane);
-
-    if (o.type === "thorn" && o.warning > 0) {
-      return;
-    }
-
-    let hit = false;
-
-    if (o.type === "wheel") {
-
-      // 回転水車の羽根の位置で通過判定
-      const dx = p.x - q.x;
-      const dy = p.y - q.y;
-
-      const angle = Math.atan2(dy, dx);
-
-      const armAngle = Math.PI / 3;
-
-      let difference = Math.abs(
-        ((angle - o.angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
-      );
-
-      const nearArm =
-        Math.min(
-          difference,
-          Math.abs(difference - armAngle),
-          Math.abs(difference + armAngle)
-        ) < 0.22;
-
-      hit =
-        distance < 27 &&
-        laneDistance < 0.65 &&
-        nearArm;
-
-    } else {
-
-      hit =
-        distance < (o.radius + 9) &&
-        laneDistance < 0.7;
-    }
-
-    if (hit && running) {
-      endGame();
-    }
-  });
+function lapTimeForLap(lap) {
+  const targets=[20,18,16,15,14,13,12.5,12,11.5,11,10.5,10];
+  if(lap<targets.length)return targets[lap];
+  return 10;
 }
 
-// ==========================================
-// パーティクル
-// ==========================================
+function updateLapSpeed() {
+  // 各周回の目標タイムへ滑らかに近づける
+  const current=lapTimeForLap(lapCount);
+  const next=lapTimeForLap(lapCount+1);
+  const f=clamp(lapProgress,0,1);
+  lapTime=current+(next-current)*f;
+}
 
-function createParticles(x, y, color, count = 10) {
+function startGame() {
+  running=true;
+  gameOver=false;
+  elapsed=0;
+  lapCount=0;
+  lapTime=20;
+  lapProgress=0;
+  totalProgress=0;
+  playerLane=1;
+  fences=[];
+  obstacles=[];
+  particles=[];
+  spawnTimer=1.8;
+  obstacleLevel=0;
+  wheelAngle=0;
+  lastTime=performance.now();
+  ui.overlay.style.display="none";
+  updateUI();
+  requestAnimationFrame(loop);
+}
 
-  for (let i = 0; i < count; i++) {
+function endGame() {
+  if(gameOver)return;
+  running=false;
+  gameOver=true;
+  if(elapsed>bestTime){
+    bestTime=elapsed;
+    localStorage.setItem("waterFlowBest",String(bestTime));
+  }
+  ui.overlay.style.display="flex";
+  ui.panel.innerHTML=`
+    <h2>GAME OVER</h2>
+    <p>
+      生存時間：<b>${elapsed.toFixed(1)}秒</b><br>
+      周回数：<b>${lapCount}</b><br>
+      BEST：<b>${bestTime.toFixed(1)}秒</b>
+    </p>
+    <button id="retryBtn">RETRY</button>
+    <p class="small">障害物を避けて、さらに長く生き残ろう。</p>
+  `;
+  document.getElementById("retryBtn").addEventListener("click",startGame);
+}
 
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 35 + Math.random() * 110;
+function updateUI() {
+  ui.time.textContent=elapsed.toFixed(1);
+  ui.lap.textContent=lapCount;
+  ui.speed.textContent=lapTime.toFixed(1)+"s";
+  ui.fences.textContent=fences.length+"/3";
+}
 
+function addParticles(x,y,color,count=12) {
+  for(let i=0;i<count;i++){
+    const a=rand(0,Math.PI*2);
+    const s=rand(30,130);
     particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 0.5 + Math.random() * 0.5,
-      maxLife: 1,
-      color
+      x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,
+      life:rand(.25,.65),max:.65,color,size:rand(2,5)
     });
   }
 }
 
-function updateParticles(dt) {
+function placeFence(x,y) {
+  if(!running)return;
+  const near=nearestTrack(x,y);
+  if(near.distance>48*48)return;
+  if(fences.length>=3)return;
 
-  particles.forEach(p => {
+  const fence={
+    lane:near.lane,
+    s:near.s,
+    age:0,
+    used:false,
+    slow:false,
+    slowEnd:0,
+    id:Math.random()
+  };
 
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-
-    p.life -= dt;
-  });
-
-  particles = particles.filter(p => p.life > 0);
-}
-
-// ==========================================
-// 描画：ステージ
-// ==========================================
-
-function drawBoard() {
-
-  ctx.clearRect(0, 0, SIZE, SIZE);
-
-  ctx.fillStyle = "#102d40";
-  ctx.fillRect(0, 0, SIZE, SIZE);
-
-  // 中央の陸地
-  ctx.fillStyle = "#b1a77d";
-
-  ctx.beginPath();
-  ctx.roundRect(
-    CENTER - 105,
-    CENTER - 105,
-    210,
-    210,
-    25
-  );
-  ctx.fill();
-
-  // 陸地の模様
-  ctx.strokeStyle = "#938a66";
-  ctx.lineWidth = 2;
-
-  for (let i = 0; i < 7; i++) {
-
-    ctx.beginPath();
-    ctx.arc(
-      CENTER + Math.cos(i * 2.4) * 35,
-      CENTER + Math.sin(i * 2.4) * 35,
-      10 + i * 5,
-      0,
-      Math.PI * 2
-    );
-    ctx.stroke();
+  // キャラクターが通過した直後の場所なら、減速用の弱流を発生させる
+  const behind=normalizeDelta(lapProgress,near.s);
+  const ahead=normalizeDelta(near.s,lapProgress);
+  if(behind>0 && behind<0.11 && playerLane===near.lane){
+    fence.slow=true;
+    fence.slowEnd=(lapProgress+0.075)%1;
+    fence.used=true;
+    addParticles(x,y,"#8bdcff",7);
+  } else {
+    addParticles(x,y,"#d9f7ff",5);
   }
 
-  // 水路の3レーン
-  for (let i = 0; i < 3; i++) {
-
-    const r = RADII[i];
-
-    ctx.strokeStyle = [
-      "#176c91",
-      "#218eb2",
-      "#176c91"
-    ][i];
-
-    ctx.lineWidth = 35;
-
-    ctx.beginPath();
-    ctx.roundRect(
-      CENTER - r,
-      CENTER - r,
-      r * 2,
-      r * 2,
-      18
-    );
-    ctx.stroke();
-
-    // レーン境界
-    ctx.strokeStyle = "#8bd9ed44";
-    ctx.lineWidth = 1.5;
-
-    ctx.beginPath();
-    ctx.roundRect(
-      CENTER - r,
-      CENTER - r,
-      r * 2,
-      r * 2,
-      18
-    );
-    ctx.stroke();
-  }
-
-  // 水路の流れの演出
-  drawWaterFlow();
-
-  // マス目
-  drawGrid();
-
-  // 陸地の文字
-  ctx.fillStyle = "#6d654d";
-  ctx.font = "bold 15px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("LAND", CENTER, CENTER + 5);
+  fences.push(fence);
+  updateUI();
 }
 
-function drawGrid() {
+function resolveFenceAtPlayer() {
+  for(const f of fences){
+    if(f.used || f.slow || f.lane!==playerLane)continue;
 
-  ctx.strokeStyle = "#c4f5ff20";
-  ctx.lineWidth = 1;
-
-  for (let i = 0; i <= GRID; i++) {
-
-    const p = i * CELL;
-
-    ctx.beginPath();
-    ctx.moveTo(p, 0);
-    ctx.lineTo(p, SIZE);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, p);
-    ctx.lineTo(SIZE, p);
-    ctx.stroke();
-  }
-}
-
-function drawWaterFlow() {
-
-  const time = performance.now() / 1000;
-
-  for (let lane = 0; lane < 3; lane++) {
-
-    const length = perimeter(lane);
-
-    const count = Math.floor(length / 65);
-
-    for (let i = 0; i < count; i++) {
-
-      const s = (
-        i * length / count +
-        time * (70 + lane * 8)
-      ) % length;
-
-      const p = getPosition(s, lane);
-
-      ctx.fillStyle = "#b2f4ff99";
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-// ==========================================
-// 描画：柵
-// ==========================================
-
-function drawBarriers() {
-
-  barriers.forEach(b => {
-
-    const p = getPosition(b.s, b.lane);
-
-    const alpha = Math.min(1, b.life / 1.0);
-
-    ctx.save();
-
-    ctx.globalAlpha = alpha;
-
-    // 柵本体
-    ctx.translate(p.x, p.y);
-
-    const angle = Math.atan2(p.dy, p.dx);
-
-    ctx.rotate(angle);
-
-    ctx.fillStyle = "#f4d36b";
-    ctx.strokeStyle = "#fff0a6";
-    ctx.lineWidth = 2;
-
-    ctx.fillRect(-17, -7, 34, 14);
-    ctx.strokeRect(-17, -7, 34, 14);
-
-    // 柵の縦線
-    ctx.strokeStyle = "#9c762d";
-    ctx.lineWidth = 2;
-
-    for (let i = -10; i <= 10; i += 10) {
-
-      ctx.beginPath();
-      ctx.moveTo(i, -7);
-      ctx.lineTo(i, 7);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-
-    // 残り時間表示
-    ctx.fillStyle = "#fff4bf";
-    ctx.font = "10px Arial";
-    ctx.textAlign = "center";
-
-    ctx.fillText(
-      b.life.toFixed(1),
-      p.x,
-      p.y - 15
-    );
-  });
-}
-
-// ==========================================
-// 描画：障害物
-// ==========================================
-
-function drawObstacles() {
-
-  obstacles.forEach(o => {
-
-    const p = getPosition(o.s, o.lane);
-
-    ctx.save();
-    ctx.translate(p.x, p.y);
-
-    if (o.type === "rock") {
-
-      ctx.fillStyle = "#667987";
-      ctx.strokeStyle = "#aebcc5";
-      ctx.lineWidth = 2;
-
-      ctx.beginPath();
-      ctx.moveTo(-13, -7);
-      ctx.lineTo(-7, -13);
-      ctx.lineTo(7, -12);
-      ctx.lineTo(14, -2);
-      ctx.lineTo(9, 11);
-      ctx.lineTo(-8, 13);
-      ctx.lineTo(-14, 4);
-      ctx.closePath();
-
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    else if (o.type === "thorn") {
-
-      if (o.warning > 0) {
-
-        ctx.strokeStyle = "#ffcc5555";
-        ctx.lineWidth = 2;
-
-        ctx.beginPath();
-        ctx.arc(0, 0, 20, 0, Math.PI * 2);
-        ctx.stroke();
-
-      } else {
-
-        ctx.fillStyle = "#e9a2ff";
-        ctx.strokeStyle = "#ffdcff";
-        ctx.lineWidth = 2;
-
-        ctx.beginPath();
-
-        for (let i = 0; i < 12; i++) {
-
-          const a = i * Math.PI / 6;
-          const r = i % 2 === 0 ? 15 : 8;
-
-          if (i === 0) {
-            ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-          } else {
-            ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-          }
+    const d=normalizeDelta(f.s,lapProgress);
+    if(d<0.009 || d>0.991){
+      // 同じ進行位置付近にある別レーンの柵を探す
+      let paired=null;
+      for(const other of fences){
+        if(other===f || other.slow || other.used)continue;
+        const sd=Math.abs(normalizeDelta(other.s,f.s));
+        const close=Math.min(sd,1-sd);
+        if(close<0.018 && Math.abs(other.lane-f.lane)===1){
+          paired=other;
+          break;
         }
-
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      }
-    }
-
-    else if (o.type === "log") {
-
-      ctx.rotate(0.5);
-
-      ctx.fillStyle = "#81502e";
-      ctx.strokeStyle = "#d6a16d";
-      ctx.lineWidth = 3;
-
-      ctx.beginPath();
-      ctx.roundRect(-20, -9, 40, 18, 8);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#d6a16d";
-      ctx.beginPath();
-      ctx.arc(-15, 0, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-    }
-
-    else if (o.type === "wheel") {
-
-      ctx.rotate(o.angle);
-
-      ctx.strokeStyle = "#e3d4a0";
-      ctx.fillStyle = "#8c7951";
-      ctx.lineWidth = 6;
-
-      ctx.beginPath();
-      ctx.arc(0, 0, 17, 0, Math.PI * 2);
-      ctx.stroke();
-
-      for (let i = 0; i < 6; i++) {
-
-        ctx.rotate(Math.PI / 3);
-
-        ctx.fillRect(-3, -25, 6, 25);
       }
 
-      ctx.beginPath();
-      ctx.arc(0, 0, 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+      let destination;
+      if(paired){
+        // 2本目の柵があるレーンへ移動する
+        destination=paired.lane;
+        paired.used=true;
+      }else{
+        // 1本だけなら隣のレーンへランダムに移動
+        if(playerLane===0)destination=1;
+        else if(playerLane===2)destination=1;
+        else destination=Math.random()<.5?0:2;
+      }
 
-    ctx.restore();
+      const p=pathPoint(playerLane,lapProgress);
+      addParticles(p.x,p.y,"#72e5ff",18);
+      playerLane=destination;
+      f.used=true;
+    }
+  }
+}
+
+function isInSlowZone() {
+  for(const f of fences){
+    if(!f.slow || f.lane!==playerLane)continue;
+    const distance=normalizeDelta(lapProgress,f.s);
+    const zone=normalizeDelta(f.slowEnd,f.s);
+    if(distance<=zone)return true;
+  }
+  return false;
+}
+
+function spawnObstacle() {
+  const difficulty=Math.min(1,elapsed/150);
+  const typeRoll=Math.random();
+  let type="rock";
+
+  if(elapsed>25 && typeRoll<0.22)type="thorn";
+  else if(elapsed>50 && typeRoll<0.38)type="log";
+  else if(elapsed>35 && typeRoll<0.55)type="wheel";
+
+  let lane=Math.floor(rand(0,3));
+  let s=(lapProgress+rand(.12,.72))%1;
+
+  if(type==="thorn")lane=0;
+  if(type==="wheel")lane=1;
+
+  obstacles.push({
+    type,lane,s,
+    angle:rand(0,Math.PI*2),
+    phase:rand(0,Math.PI*2),
+    speed:rand(.012,.025),
+    radius:type==="rock"?13:type==="thorn"?12:type==="log"?17:20,
+    active:true
   });
 }
 
-// ==========================================
-// 描画：キャラクター
-// ==========================================
+function updateObstacles(dt) {
+  const interval=Math.max(1.15,3.3-elapsed*.009);
+  spawnTimer-=dt;
+  if(spawnTimer<=0){
+    spawnObstacle();
+    if(elapsed>45 && Math.random()<.28)spawnObstacle();
+    spawnTimer=interval*rand(.75,1.2);
+  }
 
-function drawPlayer() {
+  wheelAngle+=dt*2.2;
 
-  const p = getPosition(player.s, player.lane);
+  for(const o of obstacles){
+    if(!o.active)continue;
+    o.phase+=dt*o.speed*5;
 
-  // 水流の波紋
-  ctx.fillStyle = "#9cf4ff35";
+    if(o.type==="thorn"){
+      // 外側から水路へ入り込む
+      o.s=(o.s+dt*.018)%1;
+    }
+  }
 
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, 19, 0, Math.PI * 2);
-  ctx.fill();
+  const p=pathPoint(playerLane,lapProgress);
+  for(const o of obstacles){
+    if(!o.active)continue;
 
-  // キャラクター
-  ctx.fillStyle = "#ffe26c";
-  ctx.strokeStyle = "#fff5bd";
-  ctx.lineWidth = 3;
+    let collision=false;
+    const ds=Math.abs(normalizeDelta(o.s,lapProgress));
+    const around=Math.min(ds,1-ds);
 
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, 11, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+    if(o.type==="wheel"){
+      // 水車は中央レーンを中心に回転。接触範囲に入ると危険
+      if(around<.012 && Math.abs(o.lane-playerLane)<1){
+        const safePhase=Math.sin(wheelAngle+o.phase);
+        collision=Math.abs(safePhase)<.62;
+      }
+    }else if(o.type==="thorn"){
+      const currentLane=clamp(Math.round(0+(Math.sin(o.phase)*.45+.5)*1),0,1);
+      collision=around<.009 && playerLane===currentLane;
+    }else{
+      collision=around<.009 && playerLane===o.lane;
+    }
 
-  // 目
-  ctx.fillStyle = "#344b5a";
+    if(collision){
+      addParticles(p.x,p.y,"#ff7b69",25);
+      endGame();
+      return;
+    }
+  }
 
-  ctx.beginPath();
-  ctx.arc(p.x - 3, p.y - 2, 2, 0, Math.PI * 2);
-  ctx.arc(p.x + 4, p.y - 2, 2, 0, Math.PI * 2);
-  ctx.fill();
+  obstacles=obstacles.filter(o=>Math.min(normalizeDelta(o.s,lapProgress),normalizeDelta(lapProgress,o.s))<.48);
 }
-
-// ==========================================
-// 描画：パーティクル
-// ==========================================
-
-function drawParticles() {
-
-  particles.forEach(p => {
-
-    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
-
-    ctx.fillStyle = p.color;
-
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  ctx.globalAlpha = 1;
-}
-
-// ==========================================
-// ゲーム更新
-// ==========================================
 
 function update(dt) {
+  elapsed+=dt;
 
-  if (!running) return;
+  // 周回ごとの目標タイムを段階的に更新
+  updateLapSpeed();
 
-  elapsed += dt;
+  let speedMultiplier=isInSlowZone()?.58:1;
+  const progressRate=dt/(lapTime/speedMultiplier);
+  lapProgress+=progressRate;
+  totalProgress+=progressRate;
 
-  updateLapTime();
-
-  const multiplier = calculateWaterFlow(dt);
-
-  const baseSpeed = perimeter(1) / lapTime;
-
-  const oldS = player.s;
-
-  player.s += baseSpeed * multiplier * dt;
-
-  const currentLength = perimeter(1);
-
-  if (player.s >= currentLength) {
-
-    const laps = Math.floor(player.s / currentLength);
-
-    lapCount += laps;
-    player.s %= currentLength;
-
+  while(lapProgress>=1){
+    lapProgress-=1;
+    lapCount++;
+    lapTime=lapTimeForLap(lapCount);
   }
 
-  updateBarriers(dt);
+  // 柵の有効期限は、その時点の周回時間の半分
+  for(const f of fences)f.age+=dt;
+  fences=fences.filter(f=>f.age<lapTime*.5);
+
+  resolveFenceAtPlayer();
+
+  const p=pathPoint(playerLane,lapProgress);
+  player.x=p.x;
+  player.y=p.y;
+  player.angle=p.angle;
 
   updateObstacles(dt);
 
-  updateParticles(dt);
-
-  checkCollision();
-
-  updateHUD();
-}
-
-// ==========================================
-// HUD
-// ==========================================
-
-function updateHUD() {
-
-  document.getElementById("timeValue").textContent =
-    elapsed.toFixed(1);
-
-  document.getElementById("lapValue").textContent =
-    lapCount;
-
-  document.getElementById("speedValue").textContent =
-    lapTime.toFixed(1) + "s";
-}
-
-// ==========================================
-// ゲームオーバー
-// ==========================================
-
-function endGame() {
-
-  if (gameOver) return;
-
-  running = false;
-  gameOver = true;
-
-  const p = getPosition(player.s, player.lane);
-
-  createParticles(p.x, p.y, "#ffe26c", 35);
-
-  document.getElementById("finalTime").textContent =
-    elapsed.toFixed(1) + "秒";
-
-  document.getElementById("finalLaps").textContent =
-    lapCount + "周";
-
-  if (elapsed > bestTime) {
-
-    bestTime = elapsed;
-
-    localStorage.setItem(
-      "waterFlowBest",
-      bestTime.toString()
-    );
+  for(const particle of particles){
+    particle.x+=particle.vx*dt;
+    particle.y+=particle.vy*dt;
+    particle.vx*=Math.pow(.08,dt);
+    particle.vy*=Math.pow(.08,dt);
+    particle.life-=dt;
   }
+  particles=particles.filter(p=>p.life>0);
 
-  document.getElementById("bestTime").textContent =
-    bestTime.toFixed(1) + "秒";
-
-  document.getElementById("overScreen").style.display =
-    "flex";
-
-  document.getElementById("message").textContent =
-    "GAME OVER";
+  updateUI();
 }
 
-// ==========================================
-// ゲーム開始・リセット
-// ==========================================
+function drawTrack() {
+  // 中央の陸地
+  ctx.fillStyle="#263b36";
+  ctx.beginPath();
+  ctx.roundRect(CX-155,CY-155,310,310,48);
+  ctx.fill();
 
-function startGame() {
+  // 水路の背景
+  ctx.strokeStyle="#183e50";
+  ctx.lineWidth=126;
+  ctx.lineCap="round";
+  ctx.lineJoin="round";
+  const p=paths[1];
+  ctx.beginPath();
+  p.pts.forEach((pt,i)=>{
+    if(i===0)ctx.moveTo(pt.x+CX,pt.y+CY);
+    else ctx.lineTo(pt.x+CX,pt.y+CY);
+  });
+  ctx.closePath();
+  ctx.stroke();
 
-  running = true;
-  gameOver = false;
+  // 3レーン
+  for(let lane=0;lane<3;lane++){
+    const path=paths[lane];
+    ctx.beginPath();
+    path.pts.forEach((pt,i)=>{
+      if(i===0)ctx.moveTo(pt.x+CX,pt.y+CY);
+      else ctx.lineTo(pt.x+CX,pt.y+CY);
+    });
+    ctx.closePath();
+    ctx.strokeStyle=lane===1?"#3c8195":"#2c6479";
+    ctx.lineWidth=3;
+    ctx.stroke();
 
-  elapsed = 0;
-  lapCount = 0;
+    // レーンの水流表現
+    for(let k=0;k<16;k++){
+      const s=(k/16+elapsed*.018)%1;
+      const q=pathPoint(lane,s);
+      ctx.fillStyle="#8bdfff";
+      ctx.globalAlpha=.18;
+      ctx.beginPath();
+      ctx.arc(q.x,q.y,2.2,0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1;
 
-  lapTime = 20;
-
-  player = {
-    s: 0,
-    lane: 1,
-    laneTarget: 1,
-    laneVelocity: 0,
-    speedMultiplier: 1
-  };
-
-  barriers = [];
-  obstacles = [];
-  particles = [];
-
-  obstacleTimer = 0;
-  thornTimer = 0;
-
-  logUnlocked = false;
-  wheelUnlocked = false;
-
-  document.getElementById("startScreen").style.display =
-    "none";
-
-  document.getElementById("overScreen").style.display =
-    "none";
-
-  document.getElementById("message").textContent =
-    "障害物を避けよう！";
-
-  updateBarrierUI();
-  updateHUD();
-
-  lastFrame = performance.now();
+  // 中央の装飾
+  ctx.fillStyle="#39564b";
+  ctx.font="bold 20px Arial";
+  ctx.textAlign="center";
+  ctx.fillText("LAND",CX,CY+7);
+  ctx.fillStyle="#688b76";
+  ctx.font="12px Arial";
+  ctx.fillText("WATER FLOW",CX,CY+28);
 }
 
-document.getElementById("startButton").addEventListener(
-  "click",
-  startGame
-);
+function drawFences() {
+  for(const f of fences){
+    const p=pathPoint(f.lane,f.s);
+    const alpha=clamp(1-f.age/(lapTime*.5),.2,1);
+    const path=paths[f.lane];
+    const tangent=p.angle;
+    const nx=-Math.sin(tangent),ny=Math.cos(tangent);
 
-document.getElementById("retryButton").addEventListener(
-  "click",
-  startGame
-);
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.translate(p.x,p.y);
+    ctx.rotate(tangent);
 
-// ==========================================
-// メインループ
-// ==========================================
+    // 柵本体
+    ctx.fillStyle=f.slow?"#65d8ff":"#f5e6a5";
+    ctx.shadowColor=f.slow?"#65d8ff":"#fff0ad";
+    ctx.shadowBlur=12;
+    ctx.fillRect(-17,-5,34,10);
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(-13,-3,5,6);
+    ctx.fillRect(8,-3,5,6);
 
-function gameLoop(timestamp) {
+    ctx.restore();
+    ctx.globalAlpha=1;
+  }
+}
 
-  const dt = Math.min(
-    (timestamp - lastFrame) / 1000,
-    0.04
-  );
+function drawObstacles() {
+  for(const o of obstacles){
+    if(!o.active)continue;
+    const p=pathPoint(o.lane,o.s);
+    ctx.save();
+    ctx.translate(p.x,p.y);
 
-  lastFrame = timestamp;
+    if(o.type==="rock"){
+      ctx.fillStyle="#9aa5ad";
+      ctx.strokeStyle="#d0d7dc";
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(-13,-8);ctx.lineTo(-5,-15);ctx.lineTo(10,-11);
+      ctx.lineTo(15,3);ctx.lineTo(5,14);ctx.lineTo(-11,10);
+      ctx.closePath();ctx.fill();ctx.stroke();
+    }else if(o.type==="thorn"){
+      ctx.rotate(o.phase);
+      ctx.fillStyle="#e1a1d5";
+      ctx.strokeStyle="#ffe0f8";
+      ctx.lineWidth=2;
+      for(let i=0;i<8;i++){
+        const a=i*Math.PI/4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*5,Math.sin(a)*5);
+        ctx.lineTo(Math.cos(a)*18,Math.sin(a)*18);
+        ctx.lineTo(Math.cos(a+.3)*5,Math.sin(a+.3)*5);
+        ctx.closePath();ctx.fill();ctx.stroke();
+      }
+      ctx.beginPath();ctx.arc(0,0,9,0,Math.PI*2);
+      ctx.fillStyle="#d46bbd";ctx.fill();
+    }else if(o.type==="log"){
+      ctx.rotate(.4);
+      ctx.fillStyle="#9b6941";
+      ctx.strokeStyle="#d4a06d";
+      ctx.lineWidth=3;
+      ctx.beginPath();ctx.roundRect(-20,-8,40,16,7);ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.arc(-14,0,5,0,Math.PI*2);ctx.stroke();
+    }else if(o.type==="wheel"){
+      ctx.rotate(wheelAngle+o.phase);
+      ctx.strokeStyle="#e8bd65";
+      ctx.lineWidth=5;
+      ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.stroke();
+      for(let i=0;i<4;i++){
+        ctx.rotate(Math.PI/2);
+        ctx.fillStyle="#dba94f";
+        ctx.fillRect(-3,-22,6,44);
+      }
+      ctx.fillStyle="#fff0b8";
+      ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
 
-  update(dt);
+function drawPlayer() {
+  const p=pathPoint(playerLane,lapProgress);
+  ctx.save();
+  ctx.translate(p.x,p.y);
+  ctx.rotate(p.angle);
 
-  drawBoard();
-  drawBarriers();
+  // 水しぶき
+  ctx.fillStyle="#55d8ff";
+  ctx.globalAlpha=.35;
+  ctx.beginPath();ctx.ellipse(-13,0,19,10,0,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+
+  // キャラクター
+  ctx.fillStyle="#ffe16d";
+  ctx.strokeStyle="#fff5c5";
+  ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.stroke();
+
+  ctx.fillStyle="#24313a";
+  ctx.beginPath();ctx.arc(3,-3,2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(3,3,2,0,Math.PI*2);ctx.fill();
+
+  ctx.restore();
+}
+
+function drawParticles() {
+  for(const p of particles){
+    ctx.globalAlpha=clamp(p.life/p.max,0,1);
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle="#14232d";
+  ctx.fillRect(0,0,W,H);
+
+  drawTrack();
+  drawFences();
   drawObstacles();
   drawPlayer();
   drawParticles();
 
-  requestAnimationFrame(gameLoop);
+  // 周回方向表示
+  ctx.fillStyle="#8ebdce";
+  ctx.font="12px Arial";
+  ctx.textAlign="center";
+  ctx.fillText("CLICK / TAP TO PLACE FENCE",350,28);
 }
 
-// ==========================================
-// 初期化
-// ==========================================
+function loop(now) {
+  if(!running)return;
+  const dt=Math.min((now-lastTime)/1000,.04);
+  lastTime=now;
 
-updateBarrierUI();
+  update(dt);
+  draw();
 
-document.getElementById("bestTime").textContent =
-  bestTime.toFixed(1) + "秒";
+  if(running)requestAnimationFrame(loop);
+}
 
-lastFrame = performance.now();
+function canvasPosition(e) {
+  const rect=canvas.getBoundingClientRect();
+  return {
+    x:(e.clientX-rect.left)/rect.width*W,
+    y:(e.clientY-rect.top)/rect.height*H
+  };
+}
 
-requestAnimationFrame(gameLoop);
+canvas.addEventListener("pointerdown",e=>{
+  if(!running)return;
+  e.preventDefault();
+  const p=canvasPosition(e);
+  placeFence(p.x,p.y);
+});
 
+document.getElementById("startBtn").addEventListener("click",startGame);
+
+function init() {
+  paths=[
+    makeRoundedPath(LANE[0].half,LANE[0].radius),
+    makeRoundedPath(LANE[1].half,LANE[1].radius),
+    makeRoundedPath(LANE[2].half,LANE[2].radius)
+  ];
+  const p=pathPoint(1,0);
+  player.x=p.x;player.y=p.y;
+  draw();
+}
+init();
+
+})();
 </script>
 </body>
 </html>
